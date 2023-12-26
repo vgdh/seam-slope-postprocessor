@@ -2,6 +2,9 @@
 Post processor for G-code files for hiding a FDM seam.
 
 This post processor modifies the G-code commands to hide the seam. The post processor enhances the surface quality and toughness of the printed part by concealing the seam.
+Works with gcode produced by any slicer.
+
+[Download the script](postprocessor_seam_slope.py)
 
 ### Requariements:
 - Python 3.12
