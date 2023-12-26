@@ -10,15 +10,15 @@ Works with gcode produced by any slicer.
 - Python 3.12
 
 ### Running the script
-**--path to python folder--**\python.exe "**--path to python script--**\postprocessor_seam_slope.py" "**--path to gcode file--**\slicer_x.gcode" --first_layer=0.3 --other_layers=0.3 --slope_length=40 --slope_steps=10;
+**--path to python folder--**\python.exe "**--path to python script--**\postprocessor_seam_slope.py" "**--path to gcode file--**\slicer_x.gcode" --first_layer=0.3 --other_layers=0.3 --slope_length=50 --slope_steps=10;
 
 ### Running the postprocessor from prusa slicer
-**--path to python folder--**\python.exe "**--path to python script--**\postprocessor_seam_slope.py" --first_layer=0.3 --other_layers=0.3 --slope_length=40 --slope_steps=10;
+**--path to python folder--**\python.exe "**--path to python script--**\postprocessor_seam_slope.py" --first_layer=0.3 --other_layers=0.3 --slope_length=50 --slope_steps=10;
 
 ### Recommended settings
 - Line width = 0.6-0.8mm
 - Line height = 0.3
-- Slope lenght = 10-100mm
+- Slope lenght = 10-100mm (60 is enough)
 - Slope steps = 10-20steps (Many steps over a short distance may cause unusual behavior of the extruder if use LA)
 - **Don't use any dynamic speed control**
 - Use dynamic acceleration control with min acceleration for external perimeter (like 500)
