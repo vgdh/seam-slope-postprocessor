@@ -23,7 +23,8 @@ Works with gcode produced by any slicer.
 - **Don't use any dynamic speed control**
 - Use dynamic acceleration control with min acceleration for external perimeter (like 500)
 
-### Screnshots of a printed part
+### Macro photos of printed parts
+![photo_2023-12-27_00-13-31](https://github.com/vgdh/seam-slope-postprocessor/assets/15322782/3e670575-2c52-479a-ad1e-e1534dae0c72)
 ![botom 2](https://github.com/vgdh/seam-hiding-whitepaper/assets/15322782/a429c68b-1711-44fb-9c97-4f046763b9d3)
 ![botom 3](https://github.com/vgdh/seam-hiding-whitepaper/assets/15322782/f1ebe624-44af-4e7e-a7a7-aa55142d8ca1)
 ![photo_1_2023-12-20_16-13-32](https://github.com/vgdh/seam-hiding-whitepaper/assets/15322782/e4982fe6-1fb4-4d81-90e3-9ea5f6d95e3b)
