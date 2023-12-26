@@ -7,27 +7,32 @@ This post processor modifies the G-code commands to hide the seam. The post proc
 - Python 3.12
 
 ### Running the script
-**--path to python folder--**\python.exe "**--path to python script--**\postprocessor_seam_slope.py" "**--path to gcode file--**\slicer_x.gcode" --first_layer=0.3 --other_layers=0.3 --slope_length=20 --slope_steps=10;
+**--path to python folder--**\python.exe "**--path to python script--**\postprocessor_seam_slope.py" "**--path to gcode file--**\slicer_x.gcode" --first_layer=0.3 --other_layers=0.3 --slope_length=40 --slope_steps=10;
 
 ### Running the postprocessor from prusa slicer
-**--path to python folder--**\python.exe "**--path to python script--**\postprocessor_seam_slope.py" --first_layer=0.3 --other_layers=0.3 --slope_length=20 --slope_steps=10;
+**--path to python folder--**\python.exe "**--path to python script--**\postprocessor_seam_slope.py" --first_layer=0.3 --other_layers=0.3 --slope_length=40 --slope_steps=10;
 
 ### Recommended settings
 - Line width = 0.6-0.8mm
 - Line height = 0.3
-- Slope lenght = >10mm
-- Slope steps = 10-20steps
-- Don't use any dynamic speed control
-- Use dynamic acceleration control with min acceleration for external perimeter
-- 
+- Slope lenght = 10-100mm
+- Slope steps = 10-20steps (Many steps over a short distance may cause unusual behavior of the extruder if use LA)
+- **Don't use any dynamic speed control**
+- Use dynamic acceleration control with min acceleration for external perimeter (like 500)
+
 ### Screnshots of a printed part
+![botom 2](https://github.com/vgdh/seam-hiding-whitepaper/assets/15322782/a429c68b-1711-44fb-9c97-4f046763b9d3)
+![botom 3](https://github.com/vgdh/seam-hiding-whitepaper/assets/15322782/f1ebe624-44af-4e7e-a7a7-aa55142d8ca1)
+![photo_1_2023-12-20_16-13-32](https://github.com/vgdh/seam-hiding-whitepaper/assets/15322782/e4982fe6-1fb4-4d81-90e3-9ea5f6d95e3b)
+![top 1](https://github.com/vgdh/seam-hiding-whitepaper/assets/15322782/fbca6b12-d2ec-416c-ae08-4e37baf869fd)
+![side 1](https://github.com/vgdh/seam-hiding-whitepaper/assets/15322782/dd3a2900-39af-4baa-b638-91ef0328c86e)
+![botom 1](https://github.com/vgdh/seam-hiding-whitepaper/assets/15322782/a96b0b4b-1658-4c4a-a8d8-b70bbde8845e)
+![center 1](https://github.com/vgdh/seam-hiding-whitepaper/assets/15322782/2989402c-cd03-430e-9bf3-4ee902ee383f)
+![top 2](https://github.com/vgdh/seam-hiding-whitepaper/assets/15322782/bdfca30b-73c2-4045-b297-a6454080ec01)
 
 
 ### Screnshots of my settings
 ![postprocessor](https://github.com/vgdh/seam-slope-postprocessor/assets/15322782/950390c4-cd86-4dfc-8f58-d2cd4132007f)
-
 ![line width](https://github.com/vgdh/seam-slope-postprocessor/assets/15322782/815964ec-44c0-4854-8aab-6751fbfa1167)
-
 ![layer height](https://github.com/vgdh/seam-slope-postprocessor/assets/15322782/832873c5-f7b7-4826-a2d8-89219c82a22b)
-
 ![lift](https://github.com/vgdh/seam-slope-postprocessor/assets/15322782/610a1689-aad4-4379-9818-b9a61942c0a3)
