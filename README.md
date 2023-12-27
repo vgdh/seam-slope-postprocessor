@@ -10,10 +10,10 @@ Works with gcode produced by any slicer.
 - Python 3.12
 
 ### Running the script
-**--path to python folder--**\python.exe "**--path to python script--**\postprocessor_seam_slope.py" "**--path to gcode file--**\slicer_x.gcode" --first_layer=0.3 --other_layers=0.3 --slope_length=50 --slope_steps=10;
+**--path to python folder--**\python.exe "**--path to python script--**\postprocessor_seam_slope.py" "**--path to gcode file--**\slicer_x.gcode" --first_layer=0.3 --other_layers=0.3 --slope_min_length=10 --slope_steps=8;
 
 ### Running the postprocessor from prusa slicer
-**--path to python folder--**\python.exe "**--path to python script--**\postprocessor_seam_slope.py" --first_layer=0.3 --other_layers=0.3 --slope_length=50 --slope_steps=10;
+**--path to python folder--**\python.exe "**--path to python script--**\postprocessor_seam_slope.py" --first_layer=0.3 --other_layers=0.3 -slope_min_length=10 --slope_steps=8;
 
 ### Recommended settings
 - Line width = 0.6-0.8mm
@@ -36,7 +36,7 @@ Works with gcode produced by any slicer.
 
 
 ### Screnshots of my settings
-![postprocessor](https://github.com/vgdh/seam-slope-postprocessor/assets/15322782/950390c4-cd86-4dfc-8f58-d2cd4132007f)
+![post](https://github.com/vgdh/seam-slope-postprocessor/assets/15322782/0754c5f9-e129-43e3-ba6c-4a50a13d1c70)
 ![line width](https://github.com/vgdh/seam-slope-postprocessor/assets/15322782/815964ec-44c0-4854-8aab-6751fbfa1167)
 ![layer height](https://github.com/vgdh/seam-slope-postprocessor/assets/15322782/832873c5-f7b7-4826-a2d8-89219c82a22b)
 ![lift](https://github.com/vgdh/seam-slope-postprocessor/assets/15322782/610a1689-aad4-4379-9818-b9a61942c0a3)
