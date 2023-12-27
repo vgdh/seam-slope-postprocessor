@@ -337,7 +337,7 @@ def read_gcode_file(path: str) -> List[Gcode]:
     return gcodes
 
 
-def calculate_length(sliced: List[Gcode]) -> float:
+def calculate_length_of_lines(sliced: List[Gcode]) -> float:
     length = 0
     for gcode in sliced:
         if gcode.is_xy_movement() is False:
@@ -375,7 +375,7 @@ def find_closed_loops(gcodes: List[Gcode],
                 start_index = gcodes.index(start)
                 end_index = gcodes.index(end)
                 sliced = gcodes[start_index:end_index + 1]
-                loop_length = calculate_length(sliced)
+                loop_length = calculate_length_of_lines(sliced)
                 if loop_length > min_loop_length:
                     loops.append((start_index, end_index))
                     print(f"Found a loop number {len(loops)}")
@@ -495,13 +495,13 @@ def reverse_movement_sequence(gcodes: List[Gcode]):
     new_gcode_list.remove(new_gcode_list[0])  # because we are already here
     return new_gcode_list
 
-def modify_loop_with_slope(loop_gcodes: List[Gcode], slope_length: float, slope_steps: int, layer_height: float) -> \
+
+def modify_loop_with_slope(loop_gcodes: List[Gcode], slope_steps: int, layer_height: float) -> \
         List[Gcode]:
     """
     generate gcode with slopes
     :param loop_gcodes:
     :param layer_height:
-    :param slope_length:
     :param slope_steps:
     :return:
     """
@@ -510,11 +510,11 @@ def modify_loop_with_slope(loop_gcodes: List[Gcode], slope_length: float, slope_
     first_move_Z = next((gc for gc in loop_gcodes if gc.is_extruder_move() and gc.is_xy_movement()))
     current_nozzle_finish_height = first_move_Z.state().Z
     current_layer_level = current_nozzle_finish_height - layer_height
+    slope_length = calculate_length_of_lines(loop_gcodes)
     slope_length_per_step = slope_length / slope_steps
     slope_height_per_step = layer_height / slope_steps
 
     slope_increase = []
-    slope_straight = []
     slope_decrease = []
 
     move_to_position_gcode = Gcode(command="G1")
@@ -527,6 +527,8 @@ def modify_loop_with_slope(loop_gcodes: List[Gcode], slope_length: float, slope_
         slope_height = slope_height_per_step * step
         slope_increase_step_gcodes = []
         while round(slope_length_per_step_left, 6) > 0:
+            if len(remaining_gcodes) ==0:
+                break
             if remaining_gcodes[0].is_xy_movement() is False:  # any change of speed and acceleration
                 slope_increase.append(remaining_gcodes[0])
                 remaining_gcodes.remove(remaining_gcodes[0])
@@ -555,13 +557,14 @@ def modify_loop_with_slope(loop_gcodes: List[Gcode], slope_length: float, slope_
         if step != slope_steps:  # don't write last decrease step sequence because its with zero extrusion
             slope_decrease.extend(slope_decrease_step_gcodes)
 
-    slope_straight.extend(remaining_gcodes)
+
 
     for_return = []
     for_return.extend(slope_increase)
-    for_return.extend(slope_straight)
+    for_return.extend(remaining_gcodes)
     for_return.extend(slope_decrease)
-    for_return.extend(reverse_movement_sequence(slope_decrease))
+
+    #for_return.extend(reverse_movement_sequence(slope_decrease))
 
     # lift = Gcode(command="G1", comment="Z lift")
     # lift.set_param("Z", current_nozzle_finish_height + 0.1)
@@ -631,15 +634,17 @@ def main():
     parser.add_argument('path', help='the path to the file')
     parser.add_argument('--first_layer', dest='first_layer', default=0.3, type=float)
     parser.add_argument('--other_layers', dest='other_layers', default=0.3, type=float)
-    parser.add_argument('--slope_length', dest='slope_length', default=30, type=float)
+    parser.add_argument('--slope_min_length', dest='slope_min_length', default=5, type=float)
     parser.add_argument('--slope_steps', dest='slope_steps', default=10, type=int)
+    parser.add_argument('--save_to_file', dest='save_to_file', default=None, type=bool)
 
     args = parser.parse_args()
 
     first_layer_height = args.first_layer
     layer_height = args.other_layers
-    slope_length = args.slope_length
+    slope_min_length = args.slope_min_length
     slope_steps = args.slope_steps
+    save_to_file = args.save_to_file
 
     file_path = args.path
 
@@ -648,12 +653,12 @@ def main():
     # gcodes = include_speed_in_command(gcodes)
     gcodes = convert_to_relative_extrude(gcodes)
 
-    closed_loop_ids = find_closed_loops(gcodes, 0.4, slope_length,
+    closed_loop_ids = find_closed_loops(gcodes, 0.4, slope_min_length,
                                         first_layer_height=first_layer_height)  # start end indexes
     closed_loops_with_data = []
     for cl_id in closed_loop_ids:
         print(f"Add a slope to perimeter {closed_loop_ids.index(cl_id)}")
-        modified_loop = modify_loop_with_slope(gcodes[cl_id[0]: cl_id[1] + 1], slope_length, slope_steps,
+        modified_loop = modify_loop_with_slope(gcodes[cl_id[0]: cl_id[1] + 1], slope_steps,
                                                layer_height=layer_height)
         closed_loops_with_data.append((cl_id, modified_loop))
 
@@ -679,7 +684,10 @@ def main():
             gcode_for_save.append(gcodes[original_gcode_id])
 
     destFilePath = file_path
-    # destFilePath = re.sub(r'\.gcode$', '', file_path) + '_post_processed.gcode'
+    if save_to_file is not None:
+        save_to_file
+        destFilePath = re.sub(r'\.gcode$', '', file_path) + '_post_processed.gcode'
+
     delete_file_if_exists(destFilePath)
     with open(destFilePath, "w") as writefile:
         for gcode in gcode_for_save:
