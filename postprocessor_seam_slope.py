@@ -232,7 +232,7 @@ class Gcode:
         y1 = self.previous_state.Y
         x2 = state.X
         y2 = state.Y
-        if x1 and x2 and y1 and y2:
+        if x1 is not None and x2 is not None and y1 is not None and y2 is not None:
             return distance_between_points(x1, y1, x2, y2)
         return None
 
