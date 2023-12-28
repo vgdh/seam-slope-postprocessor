@@ -221,7 +221,7 @@ class Gcode:
         return False
 
     def is_extruder_move(self):
-        found_e = next((gc for gc in self.parameters if gc.name == "E"), None)
+        found_e = next((gc for gc in self.parameters if gc.name == "E" and gc.value is not None), None)
         if found_e is not None and self.command != "G92":
             return True
         return False
