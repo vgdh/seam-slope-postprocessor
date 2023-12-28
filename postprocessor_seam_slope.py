@@ -246,6 +246,7 @@ def parse_gcode_line(gcode_line: str, prev_state: State) -> Gcode:
     if prev_state is not None:
         gcode.previous_state = prev_state.clone()
 
+    gcode_line = gcode_line.strip()
     if gcode_line.startswith(";") or gcode_line.startswith("\n"):  # If contain only comment
         # gcode.comment = gcode_line.replace("\n", "").replace(';', "").strip()
         if gcode_line.endswith("\n"):
