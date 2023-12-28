@@ -683,7 +683,7 @@ def main():
         closed_loops_with_data.append((cl_id, modified_loop))
 
     gcode_for_save = []
-    last_id = 0
+    last_id = -1
     print(f"Compiling the gcode file")
     for original_gcode_id in range(len(gcodes)):
         if original_gcode_id <= last_id:
