@@ -201,8 +201,8 @@ class Gcode:
     def is_xy_movement(self):
         if self.command != "G1":
             return False
-        found_x = next((gc for gc in self.parameters if gc.name == "X"), None)
-        found_y = next((gc for gc in self.parameters if gc.name == "Y"), None)
+        found_x = next((gc for gc in self.parameters if gc.name == "X" and gc.value is not None), None)
+        found_y = next((gc for gc in self.parameters if gc.name == "Y" and gc.value is not None), None)
         if found_x is not None or found_y is not None:
             return True
         return False
@@ -210,7 +210,7 @@ class Gcode:
     def is_z_movement(self):
         if self.command != "G1":
             return False
-        found_z = next((gc for gc in self.parameters if gc.name == "Z"), None)
+        found_z = next((gc for gc in self.parameters if gc.name == "Z" and gc.value is not None), None)
         if found_z is not None:
             return True
         return False
