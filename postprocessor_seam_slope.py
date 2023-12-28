@@ -76,22 +76,25 @@ class Gcode:
         if self.command is not None:
             string += self.command
             for st in self.parameters:
-                if st.name == "X":
-                    string += f' {st.name}{round(st.value, 3)}'
-                elif st.name == "Y":
-                    string += f' {st.name}{round(st.value, 3)}'
-                elif st.name == "Z":
-                    value = round(st.value, 3)
-                    value = format(value, '.3f')
-                    value = value.rstrip('0').rstrip('.')
-                    string += f' {st.name}{value}'
-                elif st.name == "E":
-                    value = round(st.value, 2)
-                    value = format(value, '.2f')
-                    value = value.rstrip('0').rstrip('.')
-                    string += f' {st.name}{value}'
+                if st.value is None:
+                    string += f' {st.name}'
                 else:
-                    string += f' {st.name}{st.value}'
+                    if st.name == "X":
+                        string += f' {st.name}{round(st.value, 3)}'
+                    elif st.name == "Y":
+                        string += f' {st.name}{round(st.value, 3)}'
+                    elif st.name == "Z":
+                        value = round(st.value, 3)
+                        value = format(value, '.3f')
+                        value = value.rstrip('0').rstrip('.')
+                        string += f' {st.name}{value}'
+                    elif st.name == "E":
+                        value = round(st.value, 2)
+                        value = format(value, '.2f')
+                        value = value.rstrip('0').rstrip('.')
+                        string += f' {st.name}{value}'
+                    else:
+                        string += f' {st.name}{st.value}'
 
         if self.comment is not None and len(self.comment) > 1:
             if string == "":
@@ -277,7 +280,9 @@ def parse_gcode_line(gcode_line: str, prev_state: State) -> Gcode:
             try:
                 value = float(value)
             except ValueError as e:
-                raise ValueError(f"Unable to convert value to number: {value}") from e
+                # Just keep everything in name
+                name = part
+                value = None
         parameter = Parameter(name, value)
         gcode.parameters.append(parameter)
 
