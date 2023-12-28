@@ -154,11 +154,23 @@ class Gcode:
                 elif parameter.name == "F":
                     _state.F = parameter.value
         elif self.command == "G28":
-            _state.X = 0
-            _state.Y = 0
-            _state.Z = 0
-            _state.E = 0
-            _state.F = None
+            restore_all = True
+            for parameter in self.parameters:
+                if parameter.name == "X":
+                    _state.X = 0
+                    restore_all = False
+                elif parameter.name == "Y":
+                    _state.Y = 0
+                    restore_all = False
+                elif parameter.name == "Z":
+                    _state.Z = 0
+                    restore_all = False
+            if restore_all:
+                _state.X = 0
+                _state.Y = 0
+                _state.Z = 0
+                _state.E = 0
+                _state.F = None
         elif self.command == "M104" or self.command == "M109":
             for parameter in self.parameters:
                 if parameter.name == "S":
