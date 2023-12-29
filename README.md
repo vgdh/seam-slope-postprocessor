@@ -18,8 +18,7 @@ Works with gcode produced by any slicer.
 ### Recommended settings
 - Line width = 0.6-0.8mm
 - Line height = 0.3
-- Slope lenght = 10-100mm (60 is enough)
-- Slope steps = 10-20steps (Many steps over a short distance may cause unusual behavior of the extruder if use LA)
+- Slope steps = 6-15steps (Many steps over a short distance may cause unusual behavior of the extruder if use LA)
 - **Don't use any dynamic speed control**
 - Use dynamic acceleration control with min acceleration for external perimeter (like 500)
 
