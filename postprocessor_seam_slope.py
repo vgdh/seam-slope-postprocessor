@@ -72,6 +72,17 @@ class Gcode:
         self.previous_state = previous_state
         self.num_line = None
 
+    @staticmethod
+    def _format_number(number: int, precision: int) -> str:
+        value = round(number, precision)
+        value = format(value, '.'+str(precision)+'f')
+        value = value.rstrip('0').rstrip('.')
+        if value.startswith('0.'):
+            value = value[1:]
+        elif value.startswith('-0.'):
+            value = '-' + value[2:]
+        return value
+
     def __str__(self):
         string = ""
         if self.command is not None:
@@ -80,20 +91,10 @@ class Gcode:
                 if st.value is None:
                     string += f' {st.name}'
                 else:
-                    if st.name == "X":
-                        string += f' {st.name}{round(st.value, 3)}'
-                    elif st.name == "Y":
-                        string += f' {st.name}{round(st.value, 3)}'
-                    elif st.name == "Z":
-                        value = round(st.value, 3)
-                        value = format(value, '.3f')
-                        value = value.rstrip('0').rstrip('.')
-                        string += f' {st.name}{value}'
+                    if st.name == "X" or st.name == "Y" or st.name == "Z":
+                        string += f' {st.name}{Gcode._format_number(st.value, 3)}'
                     elif st.name == "E":
-                        value = round(st.value, 2)
-                        value = format(value, '.2f')
-                        value = value.rstrip('0').rstrip('.')
-                        string += f' {st.name}{value}'
+                        string += f' {st.name}{Gcode._format_number(st.value, 5)}'
                     else:
                         string += f' {st.name}{st.value}'
 
