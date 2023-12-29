@@ -53,7 +53,8 @@ class State:
 
     def clone(self):
         return State(self.X, self.Y, self.Z, self.E, self.F,
-                     self.ExtruderTemperature, self.BedTemperature, self.Fan)
+                     self.ExtruderTemperature, self.BedTemperature, self.Fan,
+                     self.move_is_absolute, self.extrude_is_absolute)
 
 
 class Gcode:
@@ -71,27 +72,31 @@ class Gcode:
         self.previous_state = previous_state
         self.num_line = None
 
+    @staticmethod
+    def _format_number(number: int, precision: int) -> str:
+        value = round(number, precision)
+        value = format(value, '.'+str(precision)+'f')
+        value = value.rstrip('0').rstrip('.')
+        if value.startswith('0.'):
+            value = value[1:]
+        elif value.startswith('-0.'):
+            value = '-' + value[2:]
+        return value
+
     def __str__(self):
         string = ""
         if self.command is not None:
             string += self.command
             for st in self.parameters:
-                if st.name == "X":
-                    string += f' {st.name}{round(st.value, 3)}'
-                elif st.name == "Y":
-                    string += f' {st.name}{round(st.value, 3)}'
-                elif st.name == "Z":
-                    value = round(st.value, 3)
-                    value = format(value, '.3f')
-                    value = value.rstrip('0').rstrip('.')
-                    string += f' {st.name}{value}'
-                elif st.name == "E":
-                    value = round(st.value, 2)
-                    value = format(value, '.2f')
-                    value = value.rstrip('0').rstrip('.')
-                    string += f' {st.name}{value}'
+                if st.value is None:
+                    string += f' {st.name}'
                 else:
-                    string += f' {st.name}{st.value}'
+                    if st.name == "X" or st.name == "Y" or st.name == "Z":
+                        string += f' {st.name}{Gcode._format_number(st.value, 3)}'
+                    elif st.name == "E":
+                        string += f' {st.name}{Gcode._format_number(st.value, 5)}'
+                    else:
+                        string += f' {st.name}{st.value}'
 
         if self.comment is not None and len(self.comment) > 1:
             if string == "":
@@ -151,11 +156,23 @@ class Gcode:
                 elif parameter.name == "F":
                     _state.F = parameter.value
         elif self.command == "G28":
-            _state.X = 0
-            _state.Y = 0
-            _state.Z = 0
-            _state.E = 0
-            _state.F = None
+            restore_all = True
+            for parameter in self.parameters:
+                if parameter.name == "X":
+                    _state.X = 0
+                    restore_all = False
+                elif parameter.name == "Y":
+                    _state.Y = 0
+                    restore_all = False
+                elif parameter.name == "Z":
+                    _state.Z = 0
+                    restore_all = False
+            if restore_all:
+                _state.X = 0
+                _state.Y = 0
+                _state.Z = 0
+                _state.E = 0
+                _state.F = None
         elif self.command == "M104" or self.command == "M109":
             for parameter in self.parameters:
                 if parameter.name == "S":
@@ -186,8 +203,8 @@ class Gcode:
     def is_xy_movement(self):
         if self.command != "G1":
             return False
-        found_x = next((gc for gc in self.parameters if gc.name == "X"), None)
-        found_y = next((gc for gc in self.parameters if gc.name == "Y"), None)
+        found_x = next((gc for gc in self.parameters if gc.name == "X" and gc.value is not None), None)
+        found_y = next((gc for gc in self.parameters if gc.name == "Y" and gc.value is not None), None)
         if found_x is not None or found_y is not None:
             return True
         return False
@@ -195,7 +212,7 @@ class Gcode:
     def is_z_movement(self):
         if self.command != "G1":
             return False
-        found_z = next((gc for gc in self.parameters if gc.name == "Z"), None)
+        found_z = next((gc for gc in self.parameters if gc.name == "Z" and gc.value is not None), None)
         if found_z is not None:
             return True
         return False
@@ -206,7 +223,7 @@ class Gcode:
         return False
 
     def is_extruder_move(self):
-        found_e = next((gc for gc in self.parameters if gc.name == "E"), None)
+        found_e = next((gc for gc in self.parameters if gc.name == "E" and gc.value is not None), None)
         if found_e is not None and self.command != "G92":
             return True
         return False
@@ -217,7 +234,7 @@ class Gcode:
         y1 = self.previous_state.Y
         x2 = state.X
         y2 = state.Y
-        if x1 and x2 and y1 and y2:
+        if x1 is not None and x2 is not None and y1 is not None and y2 is not None:
             return distance_between_points(x1, y1, x2, y2)
         return None
 
@@ -245,7 +262,12 @@ def parse_gcode_line(gcode_line: str, prev_state: State) -> Gcode:
     gcode = Gcode()
     if prev_state is not None:
         gcode.previous_state = prev_state.clone()
+        gcode.extrude_is_absolute = gcode.previous_state.extrude_is_absolute
+        gcode.move_is_absolute = gcode.previous_state.move_is_absolute
 
+    gcode_line = gcode_line.strip()
+    if not gcode_line:
+        return gcode
     if gcode_line.startswith(";") or gcode_line.startswith("\n"):  # If contain only comment
         # gcode.comment = gcode_line.replace("\n", "").replace(';', "").strip()
         if gcode_line.endswith("\n"):
@@ -274,7 +296,9 @@ def parse_gcode_line(gcode_line: str, prev_state: State) -> Gcode:
             try:
                 value = float(value)
             except ValueError as e:
-                raise ValueError(f"Unable to convert value to number: {value}") from e
+                # Just keep everything in name
+                name = part
+                value = None
         parameter = Parameter(name, value)
         gcode.parameters.append(parameter)
 
@@ -458,7 +482,7 @@ def make_slope_step_brothers_gcodes(slope_step_gcodes: List[Gcode],
         filament_start_length = filament_length_original * layer_ratio
         gcode_start.set_param("E", filament_start_length)
         line_lenght1 = gcode_start.move_length()
-        extrude_rate1 = filament_start_length / line_lenght1
+        extrude_rate1 = 0 if line_lenght1 == 0 else filament_start_length / line_lenght1
         gcode_start.comment = f"Slope increase. Length={round(line_lenght1, 3)} R={round(extrude_rate1, 3)}"
         start.append(gcode_start)
 
@@ -468,7 +492,7 @@ def make_slope_step_brothers_gcodes(slope_step_gcodes: List[Gcode],
         filament_finish_length = filament_length_original - filament_start_length
         gcode_finish.set_param("E", filament_finish_length)
         line_lenght2 = gcode_finish.move_length()
-        extrude_rate2 = filament_finish_length / line_lenght2
+        extrude_rate2 = 0 if line_lenght2 == 0 else filament_finish_length / line_lenght2
         gcode_finish.comment = f"Slope decrease. Length={round(line_lenght2, 3)} R={round(extrude_rate2, 3)}"
         finish.append(gcode_finish)
 
@@ -596,8 +620,9 @@ def convert_to_relative_extrude(gcodes: List[Gcode]):
             gcode_new.previous_state = gcodes_new[-1].state()
 
         if gcode.is_extruder_move():
-            relative_extrude_length = gcode.get_param("E") - gcode.previous_state.E
-            gcode_new.set_param("E", relative_extrude_length)
+            if gcode.previous_state.extrude_is_absolute:
+                relative_extrude_length = gcode.get_param("E") - gcode_new.previous_state.E
+                gcode_new.set_param("E", relative_extrude_length)
             gcodes_new.append(gcode_new)
         else:
             gcodes_new.append(gcode_new)
@@ -663,7 +688,7 @@ def main():
         closed_loops_with_data.append((cl_id, modified_loop))
 
     gcode_for_save = []
-    last_id = 0
+    last_id = -1
     print(f"Compiling the gcode file")
     for original_gcode_id in range(len(gcodes)):
         if original_gcode_id <= last_id:
