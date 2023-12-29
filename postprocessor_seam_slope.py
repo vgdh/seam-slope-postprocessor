@@ -53,7 +53,8 @@ class State:
 
     def clone(self):
         return State(self.X, self.Y, self.Z, self.E, self.F,
-                     self.ExtruderTemperature, self.BedTemperature, self.Fan)
+                     self.ExtruderTemperature, self.BedTemperature, self.Fan,
+                     self.move_is_absolute, self.extrude_is_absolute)
 
 
 class Gcode:
@@ -260,6 +261,8 @@ def parse_gcode_line(gcode_line: str, prev_state: State) -> Gcode:
     gcode = Gcode()
     if prev_state is not None:
         gcode.previous_state = prev_state.clone()
+        gcode.extrude_is_absolute = gcode.previous_state.extrude_is_absolute
+        gcode.move_is_absolute = gcode.previous_state.move_is_absolute
 
     gcode_line = gcode_line.strip()
     if not gcode_line:
@@ -616,8 +619,9 @@ def convert_to_relative_extrude(gcodes: List[Gcode]):
             gcode_new.previous_state = gcodes_new[-1].state()
 
         if gcode.is_extruder_move():
-            relative_extrude_length = gcode.get_param("E") - gcode.previous_state.E
-            gcode_new.set_param("E", relative_extrude_length)
+            if gcode.previous_state.extrude_is_absolute:
+                relative_extrude_length = gcode.get_param("E") - gcode_new.previous_state.E
+                gcode_new.set_param("E", relative_extrude_length)
             gcodes_new.append(gcode_new)
         else:
             gcodes_new.append(gcode_new)
