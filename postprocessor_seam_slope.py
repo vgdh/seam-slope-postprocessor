@@ -482,7 +482,7 @@ def make_slope_step_brothers_gcodes(slope_step_gcodes: List[Gcode],
         filament_start_length = filament_length_original * layer_ratio
         gcode_start.set_param("E", filament_start_length)
         line_lenght1 = gcode_start.move_length()
-        extrude_rate1 = filament_start_length / line_lenght1
+        extrude_rate1 = 0 if line_lenght1 == 0 else filament_start_length / line_lenght1
         gcode_start.comment = f"Slope increase. Length={round(line_lenght1, 3)} R={round(extrude_rate1, 3)}"
         start.append(gcode_start)
 
@@ -492,7 +492,7 @@ def make_slope_step_brothers_gcodes(slope_step_gcodes: List[Gcode],
         filament_finish_length = filament_length_original - filament_start_length
         gcode_finish.set_param("E", filament_finish_length)
         line_lenght2 = gcode_finish.move_length()
-        extrude_rate2 = filament_finish_length / line_lenght2
+        extrude_rate2 = 0 if line_lenght2 == 0 else filament_finish_length / line_lenght2
         gcode_finish.comment = f"Slope decrease. Length={round(line_lenght2, 3)} R={round(extrude_rate2, 3)}"
         finish.append(gcode_finish)
 
