@@ -10,10 +10,10 @@ Works with gcode produced by any slicer.
 - Python 3.12
 
 ### Running the script
-**--path to python folder--**\python.exe "**--path to python script--**\postprocessor_seam_slope.py" "**--path to gcode file--**\slicer_x.gcode" --first_layer=0.3 --other_layers=0.3 --slope_min_length=10 --slope_steps=8;
+**--path to python folder--**\python.exe "**--path to python script--**\postprocessor_seam_slope.py" "**--path to gcode file--**\slicer_x.gcode" --first_layer=0.3 --other_layers=0.3 --slope_min_length=10 --slope_steps=7 --start_slope_height=0.1;
 
 ### Running the postprocessor from prusa slicer
-**--path to python folder--**\python.exe "**--path to python script--**\postprocessor_seam_slope.py" --first_layer=0.3 --other_layers=0.3 -slope_min_length=10 --slope_steps=8;
+**--path to python folder--**\python.exe "**--path to python script--**\postprocessor_seam_slope.py" --first_layer=0.3 --other_layers=0.3 -slope_min_length=10 --slope_steps=7 --start_slope_height=0.1;
 
 ### Recommended settings
 - Line width = 0.6-0.8mm
