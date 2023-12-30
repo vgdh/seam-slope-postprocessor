@@ -75,7 +75,7 @@ class Gcode:
     @staticmethod
     def _format_number(number: int, precision: int) -> str:
         value = round(number, precision)
-        value = format(value, '.'+str(precision)+'f')
+        value = format(value, '.' + str(precision) + 'f')
         value = value.rstrip('0').rstrip('.')
         if value.startswith('0.'):
             value = value[1:]
@@ -95,6 +95,17 @@ class Gcode:
                         string += f' {st.name}{Gcode._format_number(st.value, 3)}'
                     elif st.name == "E":
                         string += f' {st.name}{Gcode._format_number(st.value, 5)}'
+                        if self.is_xy_movement() is False:
+                            comment = None
+                            if st.value < 0:
+                                comment = "retract"
+                            elif st.value > 0:
+                                comment = "un_retract"
+
+                            if self.comment is None:
+                                self.comment = comment
+                            else:
+                                self.comment += f" {comment}"
                     else:
                         string += f' {st.name}{st.value}'
 
@@ -334,7 +345,7 @@ def delete_file_if_exists(file_path):
 def read_gcode_file(path: str) -> List[Gcode]:
     gcodes = []
     print("Read gcode file to memory")
-    with open(path, "r") as readfile:
+    with open(path, "r", errors="ignore") as readfile:
         lines = readfile.readlines()
         last_state = None
         num_line = 1
@@ -430,7 +441,7 @@ def vector_norm(v):
     return [v[0] / m, v[1] / m]
 
 
-def cut_gcode(gcode: Gcode, distance):
+def cut_gcode(gcode: Gcode, distance: float):
     start = [gcode.previous_state.X, gcode.previous_state.Y]  # Define the start and end points as lists
     end = [gcode.state().X, gcode.state().Y]
     direction = vector_from_points(start, end)  # Calculate the direction vector of the line
@@ -520,10 +531,11 @@ def reverse_movement_sequence(gcodes: List[Gcode]):
     return new_gcode_list
 
 
-def modify_loop_with_slope(loop_gcodes: List[Gcode], slope_steps: int, layer_height: float) -> \
+def modify_loop_with_slope(loop_gcodes: List[Gcode], slope_steps: int, layer_height: float, start_slope_height: float) -> \
         List[Gcode]:
     """
     generate gcode with slopes
+    :param start_slope_height:
     :param loop_gcodes:
     :param layer_height:
     :param slope_steps:
@@ -536,7 +548,7 @@ def modify_loop_with_slope(loop_gcodes: List[Gcode], slope_steps: int, layer_hei
     current_layer_level = current_nozzle_finish_height - layer_height
     slope_length = calculate_length_of_lines(loop_gcodes)
     slope_length_per_step = slope_length / slope_steps
-    slope_height_per_step = layer_height / slope_steps
+    slope_height_per_step = (layer_height - start_slope_height) / slope_steps
 
     slope_increase = []
     slope_decrease = []
@@ -548,17 +560,17 @@ def modify_loop_with_slope(loop_gcodes: List[Gcode], slope_steps: int, layer_hei
 
     for step in range(1, slope_steps + 1):
         slope_length_per_step_left = slope_length_per_step
-        slope_height = slope_height_per_step * step
+        slope_height = slope_height_per_step * step + start_slope_height
         slope_increase_step_gcodes = []
         while round(slope_length_per_step_left, 6) > 0:
-            if len(remaining_gcodes) ==0:
+            if len(remaining_gcodes) == 0:
                 break
             if remaining_gcodes[0].is_xy_movement() is False:  # any change of speed and acceleration
                 slope_increase.append(remaining_gcodes[0])
                 remaining_gcodes.remove(remaining_gcodes[0])
                 continue
-            minimal_line_to_draw = 0.1
 
+            minimal_line_to_draw = 0.1
             while round(slope_length_per_step_left, 6) > 0:
                 if remaining_gcodes[0].move_length() - slope_length_per_step_left > minimal_line_to_draw:
                     gcode1, gcode2 = cut_gcode(remaining_gcodes[0], slope_length_per_step_left)
@@ -578,17 +590,15 @@ def modify_loop_with_slope(loop_gcodes: List[Gcode], slope_steps: int, layer_hei
             current_layer_level=current_layer_level,
             slope_height=slope_height)
         slope_increase.extend(slope_increase_step_gcodes)
-        if step != slope_steps:  # don't write last decrease step sequence because its with zero extrusion
-            slope_decrease.extend(slope_decrease_step_gcodes)
-
-
+        # if step != slope_steps:  # don't write last decrease step sequence because its with zero extrusion
+        slope_decrease.extend(slope_decrease_step_gcodes)
 
     for_return = []
     for_return.extend(slope_increase)
     for_return.extend(remaining_gcodes)
     for_return.extend(slope_decrease)
 
-    #for_return.extend(reverse_movement_sequence(slope_decrease))
+    # for_return.extend(reverse_movement_sequence(slope_decrease))
 
     # lift = Gcode(command="G1", comment="Z lift")
     # lift.set_param("Z", current_nozzle_finish_height + 0.1)
@@ -661,6 +671,7 @@ def main():
     parser.add_argument('--other_layers', dest='other_layers', default=0.3, type=float)
     parser.add_argument('--slope_min_length', dest='slope_min_length', default=5, type=float)
     parser.add_argument('--slope_steps', dest='slope_steps', default=10, type=int)
+    parser.add_argument('--start_slope_height', dest='start_slope_height', default=0.1, type=float)
     parser.add_argument('--save_to_file', dest='save_to_file', default=None, type=bool)
 
     args = parser.parse_args()
@@ -669,6 +680,7 @@ def main():
     layer_height = args.other_layers
     slope_min_length = args.slope_min_length
     slope_steps = args.slope_steps
+    start_slope_height = args.start_slope_height
     save_to_file = args.save_to_file
 
     file_path = args.path
@@ -684,7 +696,7 @@ def main():
     for cl_id in closed_loop_ids:
         print(f"Add a slope to perimeter {closed_loop_ids.index(cl_id)}")
         modified_loop = modify_loop_with_slope(gcodes[cl_id[0]: cl_id[1] + 1], slope_steps,
-                                               layer_height=layer_height)
+                                               layer_height=layer_height, start_slope_height=start_slope_height)
         closed_loops_with_data.append((cl_id, modified_loop))
 
     gcode_for_save = []
