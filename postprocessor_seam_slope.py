@@ -94,7 +94,7 @@ class Gcode:
                     if st.name == "X" or st.name == "Y" or st.name == "Z":
                         string += f' {st.name}{Gcode._format_number(st.value, 3)}'
                     elif st.name == "E":
-                        string += f' {st.name}{Gcode._format_number(st.value, 5)}'
+                        string += f' {st.name}{Gcode._format_number(st.value, 3)}'  # 1 micron is for sure enough accuracy for extrude move
                         if self.is_xy_movement() is False:
                             comment = None
                             if st.value < 0:
@@ -531,7 +531,31 @@ def reverse_movement_sequence(gcodes: List[Gcode]):
     return new_gcode_list
 
 
-def modify_loop_with_slope(loop_gcodes: List[Gcode], slope_steps: int, layer_height: float, start_slope_height: float) -> \
+def remove_very_little_moves(for_return, tolerance: float = 0.01):
+    without_short_movements = [for_return[0]]
+    for gid in range(1, len(for_return)):
+        current_gcode = for_return[gid]
+        if current_gcode.is_xy_movement() and current_gcode.move_length() < tolerance:
+            x = current_gcode.get_param("X")
+            if x is not None:
+                without_short_movements[-1].set_param("X", x)
+            y = current_gcode.get_param("Y")
+            if y is not None:
+                without_short_movements[-1].set_param("Y", y)
+            z = current_gcode.get_param("Z")
+            if z is not None:
+                without_short_movements[-1].set_param("Z", z)
+            e = current_gcode.get_param("E")
+            if z is not None :
+                if without_short_movements[-1].get_param("E") is not None:
+                    without_short_movements[-1].set_param("E", without_short_movements[-1].get_param("E") + e)
+            continue
+        else:
+            without_short_movements.append(current_gcode)
+    return without_short_movements
+
+def modify_loop_with_slope(loop_gcodes: List[Gcode], slope_steps: int, layer_height: float,
+                           start_slope_height: float) -> \
         List[Gcode]:
     """
     generate gcode with slopes
@@ -608,6 +632,7 @@ def modify_loop_with_slope(loop_gcodes: List[Gcode], slope_steps: int, layer_hei
     # retract.set_param("E", -0.05)
     # for_return.insert(0, retract)
 
+    for_return = remove_very_little_moves(for_return)
     return for_return
 
 
