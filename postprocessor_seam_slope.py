@@ -345,7 +345,7 @@ def delete_file_if_exists(file_path):
 def read_gcode_file(path: str) -> List[Gcode]:
     gcodes = []
     print("Read gcode file to memory")
-    with open(path, "r", errors="ignore") as readfile:
+    with open(path, "r", encoding='utf8') as readfile:
         lines = readfile.readlines()
         last_state = None
         num_line = 1
@@ -751,7 +751,7 @@ def main():
         destFilePath = re.sub(r'\.gcode$', '', file_path) + '_post_processed.gcode'
 
     delete_file_if_exists(destFilePath)
-    with open(destFilePath, "w") as writefile:
+    with open(destFilePath, "w", encoding='utf-8') as writefile:
         for gcode in gcode_for_save:
             writefile.write(str(gcode) + "\n")
     writefile.close()
