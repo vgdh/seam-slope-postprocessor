@@ -10,15 +10,15 @@ Works with gcode produced by any slicer.
 - Python 3.12
 
 ### Running the script
-**--path to python folder--**\python.exe "**--path to python script--**\postprocessor_seam_slope.py" "**--path to gcode file--**\slicer_x.gcode" --first_layer=0.3 --other_layers=0.3 --slope_min_length=10 --slope_steps=7 --start_slope_height=0.1;
+**--path to python folder--**\python.exe "**--path to python script--**\postprocessor_seam_slope.py" "**--path to gcode file--**\slicer_x.gcode" --first_layer=0.3 --other_layers=0.3 --slope_min_length=10 --slope_steps=20 --start_slope_height=0.05;
 
 ### Running the postprocessor from prusa slicer
-**--path to python folder--**\python.exe "**--path to python script--**\postprocessor_seam_slope.py" --first_layer=0.3 --other_layers=0.3 -slope_min_length=10 --slope_steps=7 --start_slope_height=0.1;
+**--path to python folder--**\python.exe "**--path to python script--**\postprocessor_seam_slope.py" --first_layer=0.3 --other_layers=0.3 -slope_min_length=10 --slope_steps=20 --start_slope_height=0.05;
 
 ### Recommended settings
-- Line width = 0.6-0.8mm
 - Line height = 0.3
-- Slope steps = 6-15steps (Many steps over a short distance may cause unusual behavior of the extruder if use LA)
+- Line width 0.44 for external perimeter works very well
+- Slope steps = 6-20 steps (Many steps over a short distance may cause unusual behavior of the extruder if use LA)
 - **Don't use any dynamic speed control**
 - Use dynamic acceleration control with min acceleration for external perimeter (like 500)
 
