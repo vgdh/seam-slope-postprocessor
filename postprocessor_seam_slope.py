@@ -39,7 +39,7 @@ class Parameter:
 class State:
     def __init__(self, x=None, y=None, z=None, e=None, f=None,
                  extr_temp=None, bed_temp=None, fan=None, move_absolute=True,
-                 extrude_absolute=True):
+                 extrude_absolute=True, is_outer_perimeter=False):
         self.X = x
         self.Y = y
         self.Z = z
@@ -50,11 +50,12 @@ class State:
         self.Fan = fan
         self.move_is_absolute = move_absolute
         self.extrude_is_absolute = extrude_absolute
+        self.is_outer_perimeter = is_outer_perimeter
 
     def clone(self):
         return State(self.X, self.Y, self.Z, self.E, self.F,
                      self.ExtruderTemperature, self.BedTemperature, self.Fan,
-                     self.move_is_absolute, self.extrude_is_absolute)
+                     self.move_is_absolute, self.extrude_is_absolute, self.is_outer_perimeter)
 
 
 class Gcode:
@@ -114,7 +115,6 @@ class Gcode:
                 string += f"; {self.comment}"
             else:
                 string += f" ; {self.comment}"
-
         return string
 
     def clone(self):
@@ -132,7 +132,7 @@ class Gcode:
             gcode.num_line = self.num_line
         return gcode
 
-    def state(self):
+    def state(self) -> State:
         if self.previous_state is None:
             _state = State()
             _state.X = 0
@@ -141,6 +141,8 @@ class Gcode:
             _state.E = 0
         else:
             _state = self.previous_state.clone()
+
+        _state.is_outer_perimeter = self.is_outer_perimeter()
 
         if self.command == "G1":
             for parameter in self.parameters:
@@ -238,6 +240,19 @@ class Gcode:
         if found_e is not None and self.command != "G92":
             return True
         return False
+
+    def is_outer_perimeter(self):
+        if self.command is not None:
+            outer_wall_types = [";TYPE:Outer wall", ";TYPE:WALL-OUTER", ";TYPE:External perimeter"]
+            if self.command in outer_wall_types:
+                return True
+            elif self.command.startswith(";TYPE:"):
+                return False
+
+        if self.previous_state is None:
+            return False
+
+        return self.previous_state.is_outer_perimeter
 
     def move_length(self) -> float:
         state = self.state()
@@ -396,7 +411,7 @@ def find_closed_loops(gcodes: List[Gcode],
             continue
 
         if gcode.is_extruder_move():
-            if start is None and gcode.state().Z > first_layer_height:
+            if start is None and gcode.state().Z > first_layer_height and gcode.is_outer_perimeter():
                 start = gcode
                 end = gcode
             else:
@@ -546,13 +561,14 @@ def remove_very_little_moves(for_return, tolerance: float = 0.01):
             if z is not None:
                 without_short_movements[-1].set_param("Z", z)
             e = current_gcode.get_param("E")
-            if z is not None :
+            if z is not None:
                 if without_short_movements[-1].get_param("E") is not None:
                     without_short_movements[-1].set_param("E", without_short_movements[-1].get_param("E") + e)
             continue
         else:
             without_short_movements.append(current_gcode)
     return without_short_movements
+
 
 def modify_loop_with_slope(loop_gcodes: List[Gcode], slope_steps: int, layer_height: float,
                            start_slope_height: float) -> \
@@ -614,8 +630,9 @@ def modify_loop_with_slope(loop_gcodes: List[Gcode], slope_steps: int, layer_hei
             current_layer_level=current_layer_level,
             slope_height=slope_height)
         slope_increase.extend(slope_increase_step_gcodes)
-        # if step != slope_steps:  # don't write last decrease step sequence because its with zero extrusion
-        slope_decrease.extend(slope_decrease_step_gcodes)
+
+        if step != slope_steps:  # sequence with zero extrusion
+            slope_decrease.extend(slope_decrease_step_gcodes)
 
     for_return = []
     for_return.extend(slope_increase)
